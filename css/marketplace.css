@@ -1,0 +1,411 @@
+/* ========================================
+   FitLife Bulgaria — Marketplace Styles
+   ======================================== */
+
+/* ── Coach Card ── */
+.coach-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-base);
+  display: flex;
+  gap: var(--space-md);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  animation: slideUp 0.4s ease-out both;
+}
+
+.coach-card:active {
+  transform: scale(0.98);
+  border-color: var(--primary);
+}
+
+.coach-card-featured {
+  border-color: rgba(108, 92, 231, 0.3);
+  box-shadow: var(--shadow-glow-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.coach-card-featured::before {
+  content: '⭐ Featured';
+  position: absolute;
+  top: 8px;
+  right: -24px;
+  background: var(--gradient-warm);
+  color: var(--text-inverse);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  padding: 2px 28px;
+  transform: rotate(35deg);
+}
+
+.coach-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.coach-verified {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 2px solid var(--bg-primary);
+}
+
+.coach-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-md);
+  margin-bottom: 2px;
+}
+
+.coach-specialty {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.coach-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
+}
+
+.coach-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.coach-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--warning);
+  font-weight: var(--fw-semibold);
+}
+
+.coach-price {
+  font-weight: var(--fw-bold);
+  color: var(--success);
+}
+
+/* ── AI Coach Card ── */
+.ai-coach-card {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.12), rgba(0, 210, 255, 0.12));
+  border: 1px solid rgba(108, 92, 231, 0.25);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-coach-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.15), transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.ai-coach-card:active {
+  transform: scale(0.97);
+}
+
+.ai-coach-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-sm);
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
+.ai-coach-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.ai-coach-subtitle {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Coach Profile Page ── */
+.coach-hero {
+  position: relative;
+  padding: var(--space-2xl) var(--space-base);
+  text-align: center;
+  margin: calc(var(--space-base) * -1);
+  margin-bottom: var(--space-xl);
+  background: linear-gradient(180deg, rgba(108, 92, 231, 0.15) 0%, transparent 100%);
+  border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+}
+
+.coach-hero-avatar {
+  margin: 0 auto var(--space-md);
+}
+
+.coach-hero-name {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-black);
+  margin-bottom: 4px;
+}
+
+.coach-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+/* ── Service Card ── */
+.service-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.service-card:active {
+  background: var(--bg-glass-strong);
+}
+
+.service-info {
+  flex: 1;
+}
+
+.service-name {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-base);
+  margin-bottom: 2px;
+}
+
+.service-desc {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.service-price {
+  font-weight: var(--fw-bold);
+  color: var(--success);
+  font-size: var(--fs-md);
+  white-space: nowrap;
+}
+
+/* ── Plan Store Card ── */
+.plan-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.plan-card:active {
+  transform: scale(0.97);
+}
+
+.plan-card-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.plan-card-body {
+  padding: var(--space-md);
+}
+
+.plan-card-title {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-base);
+  margin-bottom: 4px;
+}
+
+.plan-card-coach {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.plan-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-card-price {
+  font-weight: var(--fw-bold);
+  color: var(--success);
+}
+
+.plan-card-rating {
+  font-size: var(--fs-xs);
+  color: var(--warning);
+}
+
+/* ── Review Card ── */
+.review-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.review-stars {
+  color: var(--warning);
+  font-size: var(--fs-sm);
+}
+
+.review-text {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  line-height: var(--lh-relaxed);
+}
+
+.review-date {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
+/* ── Booking Calendar ── */
+.booking-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+}
+
+.calendar-day.available {
+  color: var(--text-primary);
+  background: var(--bg-glass);
+}
+
+.calendar-day.available:active {
+  background: var(--primary);
+  color: white;
+}
+
+.calendar-day.selected {
+  background: var(--primary);
+  color: white;
+  font-weight: var(--fw-bold);
+}
+
+.calendar-day.disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── Star Rating Input ── */
+.star-rating {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  font-size: var(--fs-xl);
+  color: var(--border-medium);
+  cursor: pointer;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.star.filled {
+  color: var(--warning);
+}
+
+.star:hover {
+  transform: scale(1.2);
+}
+
+/* ── Category Pills ── */
+.category-pills {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--space-sm) 0;
+}
+.category-pills::-webkit-scrollbar { display: none; }
+
+.category-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.category-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.category-pill:active {
+  transform: scale(0.95);
+}
