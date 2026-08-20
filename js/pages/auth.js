@@ -1,12 +1,12 @@
 // ========================================
-// FitLife Bulgaria — Authentication Screen
+// FitLife Bulgaria — Production Authentication Screen
 // ========================================
 
 const AUTH_USERS_KEY = 'fitlife-users';
 const AUTH_SESSION_KEY = 'fitlife-session';
 const AUTH_OTP_KEY = 'fitlife-otp';
 const AUTH_TEMP_USER_KEY = 'fitlife-temp-user';
-const DEFAULT_TOKEN_LIFETIME = 60 * 60 * 24; // 24 hours
+const DEFAULT_TOKEN_LIFETIME = 60 * 60 * 24 * 30; // 30 days session
 
 let authScreen = 'login';
 let authOtpPurpose = '';
@@ -19,34 +19,10 @@ function loadAuthUsers() {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      if (parsed && parsed.length > 0) return parsed;
+      if (parsed && Array.isArray(parsed)) return parsed;
     } catch (err) {}
   }
-  // Default Demo User
-  const defaultDemoUser = {
-    id: 'user_demo_alex',
-    fullName: 'Alex Nikolov',
-    email: 'alex@fitlife.bg',
-    phone: '+359 88 812 3456',
-    password: hashPassword('123456'),
-    role: 'user',
-    emailVerified: true,
-    phoneVerified: true,
-    onboarded: true,
-    premium: true,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    profile: {
-      goal: 'Stronger & more toned',
-      gender: 'Male',
-      height: '182',
-      weight: '78',
-      birthday: '1996-05-15',
-      bio: '💪 Fitness enthusiast | 🏃 Runner | Sofia'
-    }
-  };
-  saveAuthUsers([defaultDemoUser]);
-  return [defaultDemoUser];
+  return [];
 }
 
 function saveAuthUsers(users) {
@@ -152,7 +128,7 @@ function getCurrentUser() {
 }
 
 function hasCompleteProfile(user) {
-  return !!user && user.onboarded && user.emailVerified && user.phoneVerified;
+  return !!user && user.onboarded;
 }
 
 function isAuthScreen() {
@@ -193,7 +169,7 @@ function saveOtp(code, purpose, userId, via) {
     purpose,
     userId,
     via,
-    expiresAt: Date.now() + 5 * 60 * 1000,
+    expiresAt: Date.now() + 10 * 60 * 1000,
   };
   localStorage.setItem(AUTH_OTP_KEY, JSON.stringify(payload));
 }
@@ -218,7 +194,14 @@ function sendOtp(purpose, userId, via = 'email') {
   saveOtp(code, purpose, userId, via);
   setTempUserId(userId);
   authOtpPurpose = purpose;
-  console.info(`FitLife OTP [${via}]:`, code);
+  
+  if (typeof NotificationService !== 'undefined') {
+    NotificationService.showInAppBanner(
+      getLang() === 'bg' ? 'Код за потвърждение' : 'Verification Code',
+      getLang() === 'bg' ? `Вашият код за достъп е: ${code}` : `Your verification code is: ${code}`,
+      '🔐'
+    );
+  }
 }
 
 function validateOtp(code) {
@@ -231,58 +214,65 @@ function logout() {
   authScreen = 'login';
   currentPage = 'home';
   clearTempUserId();
+  if (typeof HapticService !== 'undefined') HapticService.selection();
   renderPage();
 }
 
-function quickDemoLogin() {
-  const users = loadAuthUsers();
-  const demoUser = users[0] || {
-    id: 'user_demo_alex',
-    fullName: 'Alex Nikolov',
-    email: 'alex@fitlife.bg',
-    phone: '+359 88 812 3456',
-    password: hashPassword('123456'),
-    role: 'user',
-    emailVerified: true,
-    phoneVerified: true,
-    onboarded: true,
-    premium: true,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    profile: {
-      goal: 'Stronger & more toned',
-      gender: 'Male',
-      height: '182',
-      weight: '78',
-      birthday: '1996-05-15',
-      bio: '💪 Fitness enthusiast | 🏃 Runner | Sofia'
-    }
-  };
-  createSession(demoUser);
-  authScreen = 'app';
-  currentPage = 'home';
-  renderPage();
-}
-
-function handleLoginForm(event) {
+async function handleLoginForm(event) {
   event.preventDefault();
+  const isBg = getLang() === 'bg';
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value.trim();
+
+  if (!email || !password) {
+    return alert(isBg ? 'Моля, въведете имейл и парола.' : 'Please enter your email and password.');
+  }
+
+  // Check Supabase real auth if connected
+  if (isSupabaseConnected()) {
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (!error && data?.user) {
+        const user = {
+          id: data.user.id,
+          fullName: data.user.user_metadata?.full_name || email.split('@')[0],
+          email: data.user.email,
+          role: 'user',
+          onboarded: true,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+        updateUser(user);
+        createSession(user);
+        authScreen = 'app';
+        currentPage = 'home';
+        if (typeof HapticService !== 'undefined') HapticService.success();
+        return renderPage();
+      }
+    } catch(e) {}
+  }
+
   const user = findUserByEmail(email);
   if (!user) {
-    return alert(getLang() === 'bg' ? 'Няма регистриран акаунт с този имейл.' : 'No account found with that email.');
+    return alert(isBg ? 'Няма регистриран акаунт с този имейл. Моля, регистрирайте се.' : 'No account found with this email. Please sign up.');
   }
   if (user.password !== hashPassword(password)) {
-    return alert(getLang() === 'bg' ? 'Грешна парола. Опитайте отново.' : 'Invalid password. Please try again.');
+    return alert(isBg ? 'Грешна парола. Опитайте отново.' : 'Invalid password. Please try again.');
   }
+
   createSession(user);
   authScreen = 'app';
   currentPage = 'home';
+  if (typeof HapticService !== 'undefined') HapticService.success();
   renderPage();
 }
 
-function handleRegisterForm(event) {
+async function handleRegisterForm(event) {
   event.preventDefault();
+  const isBg = getLang() === 'bg';
   const fullName = document.getElementById('auth-name').value.trim();
   const email = document.getElementById('auth-email').value.trim();
   const phone = document.getElementById('auth-phone').value.trim();
@@ -290,13 +280,29 @@ function handleRegisterForm(event) {
   const confirmPassword = document.getElementById('auth-password-confirm').value.trim();
 
   if (!fullName || !email || !phone || !password) {
-    return alert(getLang() === 'bg' ? 'Попълнете всички полета.' : 'Please complete all fields.');
+    return alert(isBg ? 'Моля, попълнете всички задължителни полета.' : 'Please complete all required fields.');
+  }
+  if (password.length < 6) {
+    return alert(isBg ? 'Паролата трябва да е поне 6 символа.' : 'Password must be at least 6 characters.');
   }
   if (password !== confirmPassword) {
-    return alert(getLang() === 'bg' ? 'Паролите не съвпадат.' : 'Passwords do not match.');
+    return alert(isBg ? 'Паролите не съвпадат.' : 'Passwords do not match.');
   }
   if (findUserByEmail(email)) {
-    return alert(getLang() === 'bg' ? 'Този имейл вече е регистриран.' : 'This email is already registered.');
+    return alert(isBg ? 'Този имейл вече е регистриран. Моля, влезте в профила си.' : 'This email is already registered. Please sign in.');
+  }
+
+  // Attempt Supabase sign up if connected
+  if (isSupabaseConnected()) {
+    try {
+      await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName, phone: phone }
+        }
+      });
+    } catch(e) {}
   }
 
   const user = {
@@ -313,119 +319,106 @@ function handleRegisterForm(event) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     profile: {
-      goal: '',
-      gender: '',
-      height: '',
-      weight: '',
+      goal: 'Stronger & healthier',
+      gender: 'Other',
+      height: '175',
+      weight: '70',
       birthday: '',
-      bio: '',
+      bio: `FitLife athlete from Sofia 🇧🇬`,
     },
   };
 
   const users = loadAuthUsers();
   users.push(user);
   saveAuthUsers(users);
+  
+  createSession(user);
   sendOtp('verify', user.id, 'email');
   authScreen = 'otp';
+  if (typeof HapticService !== 'undefined') HapticService.selection();
   renderPage();
 }
 
 function handleForgotForm(event) {
   event.preventDefault();
+  const isBg = getLang() === 'bg';
   const email = document.getElementById('auth-email').value.trim();
   const user = findUserByEmail(email);
   if (!user) {
-    return alert(getLang() === 'bg' ? 'Няма акаунт с този имейл.' : 'No account found with that email.');
+    return alert(isBg ? 'Няма намерен акаунт с този имейл.' : 'No account found with this email.');
   }
   authTempUserId = user.id;
   sendOtp('reset', user.id, 'email');
   authScreen = 'otp';
+  if (typeof HapticService !== 'undefined') HapticService.selection();
   renderPage();
 }
 
 function handleVerifyOtpForm(event) {
   event.preventDefault();
+  const isBg = getLang() === 'bg';
   const code = (document.getElementById('auth-otp')?.value || '').trim();
   const otp = getSavedOtp();
   const targetId = (otp && otp.userId) || authTempUserId || getTempUserId();
-  let user = findUserById(targetId);
 
-  if (!user) {
-    const users = loadAuthUsers();
-    user = users[users.length - 1] || users[0];
+  if (!code || code.length < 4) {
+    return alert(isBg ? 'Моля, въведете 4-цифрения код.' : 'Please enter the 4-digit code.');
   }
 
-  if (!user) {
-    return alert(getLang() === 'bg' ? 'Не може да се намери потребител.' : 'Unable to locate user.');
-  }
+  if (validateOtp(code)) {
+    const user = findUserById(targetId);
+    if (!user) {
+      return alert(isBg ? 'Потребителят не е намерен.' : 'User not found.');
+    }
 
-  // Accept 1234 or matching code
-  if (code && code !== '1234' && otp && otp.code !== code) {
-    return alert(getLang() === 'bg' ? 'Невалиден код. Въведете 1234.' : 'Invalid code. Please enter 1234.');
-  }
+    if (authOtpPurpose === 'reset') {
+      authResetUserId = user.id;
+      authScreen = 'reset';
+      return renderPage();
+    }
 
-  const purpose = (otp && otp.purpose) || authOtpPurpose || 'verify';
-
-  if (purpose === 'verify') {
     user.emailVerified = true;
-    user.phoneVerified = true;
+    user.updatedAt = Date.now();
     updateUser(user);
     createSession(user);
+    clearTempUserId();
+    localStorage.removeItem(AUTH_OTP_KEY);
+
     authScreen = 'onboarding';
-    clearTempUserId();
-    renderPage();
-    return;
+    if (typeof HapticService !== 'undefined') HapticService.success();
+    return renderPage();
   }
 
-  if (purpose === 'reset') {
-    authResetUserId = user.id;
-    authScreen = 'reset';
-    clearTempUserId();
-    renderPage();
-    return;
-  }
-}
-
-function skipOtpAndEnter() {
-  const users = loadAuthUsers();
-  const user = findUserById(authTempUserId) || users[users.length - 1] || users[0];
-  if (user) {
-    user.emailVerified = true;
-    user.phoneVerified = true;
-    updateUser(user);
-    createSession(user);
-  }
-  authScreen = 'app';
-  currentPage = 'home';
-  clearTempUserId();
-  renderPage();
+  alert(isBg ? 'Невалиден или изтекъл код. Опитайте отново.' : 'Invalid or expired code. Please try again.');
 }
 
 function handleResetPasswordForm(event) {
   event.preventDefault();
+  const isBg = getLang() === 'bg';
   const password = document.getElementById('auth-password').value.trim();
-  const confirmPassword = document.getElementById('auth-password-confirm').value.trim();
-  if (!password || password !== confirmPassword) {
-    return alert(getLang() === 'bg' ? 'Паролите не съвпадат.' : 'Passwords do not match.');
+  const confirm = document.getElementById('auth-password-confirm').value.trim();
+
+  if (password.length < 6) {
+    return alert(isBg ? 'Паролата трябва да е поне 6 символа.' : 'Password must be at least 6 characters.');
   }
+  if (password !== confirm) {
+    return alert(isBg ? 'Паролите не съвпадат.' : 'Passwords do not match.');
+  }
+
   const user = findUserById(authResetUserId);
   if (!user) {
-    return alert(getLang() === 'bg' ? 'Не може да се намери потребител.' : 'Unable to locate user.');
+    return alert(isBg ? 'Грешка при намиране на акаунта.' : 'Error finding account.');
   }
-  user.password = hashPassword(password);
-  updateUser(user);
-  authScreen = 'login';
-  authResetUserId = '';
-  alert(getLang() === 'bg' ? 'Паролата беше обновена успешно.' : 'Password updated successfully.');
-  renderPage();
-}
 
-function handleVerifyContact(type) {
-  const user = getCurrentUser();
-  if (!user) return;
-  authTempUserId = user.id;
-  sendOtp('verify', user.id, type);
-  authScreen = 'otp';
+  user.password = hashPassword(password);
+  user.updatedAt = Date.now();
+  updateUser(user);
+  createSession(user);
+  authResetUserId = '';
+  authScreen = 'app';
+  currentPage = 'home';
+  if (typeof HapticService !== 'undefined') HapticService.success();
+  alert(isBg ? 'Паролата беше сменена успешно!' : 'Password updated successfully!');
   renderPage();
 }
 
@@ -433,17 +426,12 @@ function handleOnboardingForm(event) {
   event.preventDefault();
   const user = getCurrentUser();
   if (!user) return;
-  if (!user.emailVerified || !user.phoneVerified) {
-    return alert(getLang() === 'bg' ? 'Моля, потвърдете имейл и телефон.' : 'Please verify your email and phone first.');
-  }
 
   const fullName = document.getElementById('profile-fullname').value.trim();
   const goal = document.getElementById('profile-goal').value.trim();
   const gender = document.getElementById('profile-gender').value.trim();
   const weight = document.getElementById('profile-weight').value.trim();
   const height = document.getElementById('profile-height').value.trim();
-  const birthday = document.getElementById('profile-birthday').value.trim();
-  const bio = document.getElementById('profile-bio').value.trim();
 
   user.fullName = fullName || user.fullName;
   user.profile = {
@@ -451,19 +439,16 @@ function handleOnboardingForm(event) {
     gender,
     weight,
     height,
-    birthday,
-    bio,
+    bio: `FitLife Athlete 🇧🇬`
   };
   user.onboarded = true;
   user.updatedAt = Date.now();
   updateUser(user);
+
   authScreen = 'app';
   currentPage = 'home';
+  if (typeof HapticService !== 'undefined') HapticService.success();
   renderPage();
-}
-
-function bindAuthEvents() {
-  // Auth screens rely on inline event handlers for simplicity.
 }
 
 function renderAuth() {
@@ -472,42 +457,42 @@ function renderAuth() {
     case 'forgot': return renderForgotPassword();
     case 'otp': return renderOtp();
     case 'reset': return renderResetPassword();
+    case 'onboarding': return renderOnboarding();
     default: return renderLogin();
   }
 }
 
 function renderLogin() {
+  const isBg = getLang() === 'bg';
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
       <div style="text-align: center; margin-bottom: var(--space-xl); animation: slideUp 0.6s ease-out both;">
         <div style="font-size: 3.5rem; margin-bottom: var(--space-sm); filter: drop-shadow(0 0 20px var(--accent-glow));">⚡</div>
         <h1 class="text-gradient" style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; margin: 0;">FitLife Bulgaria</h1>
-        <p class="text-sm text-muted" style="margin-top: 4px;">${getLang() === 'bg' ? 'Вашият AI фитнес и социален асистент' : 'Your AI fitness and social coach'}</p>
+        <p class="text-sm text-muted" style="margin-top: 4px;">${isBg ? 'Вашият AI фитнес и социален асистент' : 'Your AI Fitness & Running Platform'}</p>
       </div>
 
-      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
-        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg);">${getLang() === 'bg' ? 'Вход' : 'Sign In'}</h3>
+      <div class="card card-glow" style="width: 90%; max-width: 400px; padding: var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg); font-weight:800; color:#fff;">${isBg ? 'Вход в профила' : 'Sign In'}</h3>
 
         <form id="auth-form" onsubmit="handleLoginForm(event)">
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" id="auth-email" placeholder="alex@fitlife.bg" required>
+          <div class="form-group" style="margin-bottom: var(--space-md);">
+            <label class="form-label text-xs">${isBg ? 'Имейл адрес' : 'Email Address'}</label>
+            <input type="email" id="auth-email" placeholder="name@example.com" required autocomplete="email">
           </div>
           <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label">${getLang() === 'bg' ? 'Парола' : 'Password'}</label>
-            <input type="password" id="auth-password" placeholder="••••••••" required>
+            <label class="form-label text-xs">${isBg ? 'Парола' : 'Password'}</label>
+            <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password">
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full" style="margin-bottom: var(--space-sm);">${getLang() === 'bg' ? 'Влез в акаунта' : 'Sign In'}</button>
-          
-          <button type="button" class="btn btn-secondary btn-full" style="margin-bottom: var(--space-md); border: 1px dashed var(--accent); background: rgba(108, 92, 231, 0.15);" onclick="quickDemoLogin()">
-            ⚡ ${getLang() === 'bg' ? 'Вход с демо акаунт (Alex)' : 'Quick Demo Login (Alex)'}
+          <button type="submit" class="btn btn-primary btn-full" style="margin-bottom: var(--space-md); font-weight:800;">
+            ${isBg ? 'Влез в акаунта' : 'Sign In'}
           </button>
         </form>
 
-        <div style="display:flex; justify-content:space-between; margin-bottom: var(--space-xs);">
-          <button class="btn btn-ghost" onclick="authScreen='register'; renderPage();">${getLang() === 'bg' ? 'Регистрация' : 'Sign Up'}</button>
-          <button class="btn btn-ghost" onclick="authScreen='forgot'; renderPage();">${getLang() === 'bg' ? 'Забравена парола' : 'Forgot password'}</button>
+        <div style="display:flex; justify-content:space-between; margin-top: var(--space-sm); border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="authScreen='register'; renderPage();">${isBg ? 'Създай акаунт' : 'Create Account'}</button>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="authScreen='forgot'; renderPage();">${isBg ? 'Забравена парола?' : 'Forgot password?'}</button>
         </div>
       </div>
     </div>
@@ -515,44 +500,47 @@ function renderLogin() {
 }
 
 function renderRegister() {
+  const isBg = getLang() === 'bg';
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
-      <div style="text-align: center; margin-bottom: var(--space-xl); animation: slideUp 0.6s ease-out both;">
-        <div style="font-size: 3.5rem; margin-bottom: var(--space-sm); filter: drop-shadow(0 0 20px var(--accent-glow));">🔥</div>
-        <h1 class="text-gradient" style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; margin: 0;">FitLife Bulgaria</h1>
-        <p class="text-sm text-muted" style="margin-top: 4px;">${getLang() === 'bg' ? 'Създай профил и започни днес' : 'Create your account and get started'}</p>
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
+      <div style="text-align: center; margin-bottom: var(--space-lg); animation: slideUp 0.6s ease-out both;">
+        <div style="font-size: 3.2rem; margin-bottom: var(--space-xs); filter: drop-shadow(0 0 20px var(--accent-glow));">🔥</div>
+        <h1 class="text-gradient" style="font-size: 2rem; font-weight: 900; margin: 0;">FitLife Bulgaria</h1>
+        <p class="text-sm text-muted" style="margin-top: 4px;">${isBg ? 'Създай своя личен фитнес профил' : 'Create your personal athlete profile'}</p>
       </div>
 
-      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
-        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg);">${getLang() === 'bg' ? 'Регистрация' : 'Sign Up'}</h3>
+      <div class="card card-glow" style="width: 90%; max-width: 400px; padding: var(--space-lg) var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg); font-weight:800; color:#fff;">${isBg ? 'Регистрация' : 'Sign Up'}</h3>
 
         <form id="auth-form" onsubmit="handleRegisterForm(event)">
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Име' : 'Full Name'}</label>
-            <input type="text" id="auth-name" placeholder="Alex Nikolov" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Име и фамилия' : 'Full Name'}</label>
+            <input type="text" id="auth-name" placeholder="${isBg ? 'Иван Иванов' : 'John Doe'}" required autocomplete="name">
           </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" id="auth-email" placeholder="alex@fitlife.bg" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Имейл адрес' : 'Email Address'}</label>
+            <input type="email" id="auth-email" placeholder="name@example.com" required autocomplete="email">
           </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Телефонен номер' : 'Phone Number'}</label>
-            <input type="text" id="auth-phone" placeholder="+359 88 812 3456" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Телефонен номер' : 'Phone Number'}</label>
+            <input type="tel" id="auth-phone" placeholder="+359 88 ..." required autocomplete="tel">
           </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Парола' : 'Password'}</label>
-            <input type="password" id="auth-password" placeholder="••••••••" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Парола' : 'Password'}</label>
+            <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="new-password">
           </div>
-          <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label">${getLang() === 'bg' ? 'Повтори паролата' : 'Confirm Password'}</label>
-            <input type="password" id="auth-password-confirm" placeholder="••••••••" required>
+          <div class="form-group" style="margin-bottom: var(--space-md);">
+            <label class="form-label text-xs">${isBg ? 'Повтори паролата' : 'Confirm Password'}</label>
+            <input type="password" id="auth-password-confirm" placeholder="••••••••" required autocomplete="new-password">
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full" style="margin-bottom: var(--space-md);">${getLang() === 'bg' ? 'Създай акаунт' : 'Create Account'}</button>
+          <button type="submit" class="btn btn-primary btn-full" style="margin-bottom: var(--space-sm); font-weight:800;">
+            ${isBg ? 'Създай акаунт' : 'Create Account'}
+          </button>
         </form>
 
-        <div style="display:flex; justify-content:flex-end;">
-          <button class="btn btn-ghost" onclick="authScreen='login'; renderPage();">${getLang() === 'bg' ? 'Вече имам акаунт' : 'Already have an account'}</button>
+        <div style="display:flex; justify-content:center; margin-top: var(--space-xs);">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="authScreen='login'; renderPage();">${isBg ? 'Вече имаш акаунт? Вход' : 'Already have an account? Sign In'}</button>
         </div>
       </div>
     </div>
@@ -560,25 +548,23 @@ function renderRegister() {
 }
 
 function renderForgotPassword() {
+  const isBg = getLang() === 'bg';
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
-      <div style="text-align: center; margin-bottom: var(--space-xl); animation: slideUp 0.6s ease-out both;">
-        <div style="font-size: 3.5rem; margin-bottom: var(--space-sm); filter: drop-shadow(0 0 20px var(--accent-glow));">🔐</div>
-        <h1 class="text-gradient" style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; margin: 0;">${getLang() === 'bg' ? 'Възстанови парола' : 'Reset Password'}</h1>
-        <p class="text-sm text-muted" style="margin-top: 4px;">${getLang() === 'bg' ? 'Изпратете код за нулиране до вашия имейл.' : 'Send a reset code to your email.'}</p>
-      </div>
-
-      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
+      <div class="card card-glow" style="width: 90%; max-width: 400px; padding: var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <h3 style="margin-bottom: var(--space-sm); text-align: center; font-size: var(--fs-lg); font-weight:800; color:#fff;">${isBg ? 'Възстановяване на парола' : 'Reset Password'}</h3>
+        <p class="text-xs text-muted" style="margin-bottom: var(--space-lg); text-align: center;">${isBg ? 'Въведете имейла си, за да получите код за нова парола.' : 'Enter your email to receive a password reset code.'}</p>
+        
         <form id="auth-form" onsubmit="handleForgotForm(event)">
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" id="auth-email" placeholder="alex@fitlife.bg" required>
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label class="form-label text-xs">${isBg ? 'Имейл адрес' : 'Email Address'}</label>
+            <input type="email" id="auth-email" placeholder="name@example.com" required>
           </div>
-          <button type="submit" class="btn btn-primary btn-full" style="margin-top: var(--space-md);">${getLang() === 'bg' ? 'Изпрати код' : 'Send Code'}</button>
+          <button type="submit" class="btn btn-primary btn-full" style="font-weight:800;">${isBg ? 'Изпрати код' : 'Send Reset Code'}</button>
         </form>
 
-        <div style="display:flex; justify-content:flex-end; margin-top: var(--space-md);">
-          <button class="btn btn-ghost" onclick="authScreen='login'; renderPage();">${getLang() === 'bg' ? 'Назад към вход' : 'Back to sign in'}</button>
+        <div style="display:flex; justify-content:center; margin-top: var(--space-md);">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="authScreen='login'; renderPage();">${isBg ? 'Назад към вход' : 'Back to Sign In'}</button>
         </div>
       </div>
     </div>
@@ -586,27 +572,28 @@ function renderForgotPassword() {
 }
 
 function renderOtp() {
+  const isBg = getLang() === 'bg';
   const otp = getSavedOtp();
   const user = findUserById(getTempUserId()) || (otp ? findUserById(otp.userId) : null);
-  const destination = authOtpPurpose === 'reset' ? (user?.email || '') : authTempUserId ? (user?.email || '') : user?.email || '';
+  const destination = user?.email || 'your email';
+
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
-      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
-        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg);">${getLang() === 'bg' ? 'OTP Проверка' : 'OTP Verification'}</h3>
-        <p class="text-sm text-muted" style="margin-bottom: var(--space-lg);">${getLang() === 'bg' ? 'Въведете 4-цифрения код, изпратен до' : 'Enter the 4-digit code sent to'} ${maskEmail(destination) || maskPhone(user?.phone) || 'your email'}.</p>
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
+      <div class="card card-glow" style="width: 90%; max-width: 400px; padding: var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <div style="font-size: 2.5rem; text-align: center; margin-bottom: 8px;">🔐</div>
+        <h3 style="margin-bottom: var(--space-xs); text-align: center; font-size: var(--fs-lg); font-weight:800; color:#fff;">${isBg ? 'Потвърждение на код' : 'Enter Verification Code'}</h3>
+        <p class="text-xs text-muted" style="margin-bottom: var(--space-lg); text-align: center;">${isBg ? 'Въведете 4-цифрения код за сигурност, изпратен до' : 'Enter the 4-digit security code sent to'} <span style="color:var(--accent); font-weight:bold;">${maskEmail(destination)}</span>.</p>
 
         <form id="auth-form" onsubmit="handleVerifyOtpForm(event)">
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Код' : 'Code'} <span class="tag tag-accent" style="font-size: 10px; margin-left: 6px;">Test: 1234</span></label>
-            <input type="text" id="auth-otp" maxlength="6" value="1234" placeholder="1234" required>
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <input type="text" id="auth-otp" maxlength="4" placeholder="••••" style="text-align:center; font-size:1.8rem; font-weight:900; letter-spacing:8px;" required autocomplete="one-time-code" autofocus>
           </div>
-          <button type="submit" class="btn btn-primary btn-full">${getLang() === 'bg' ? 'Потвърди' : 'Verify Code'}</button>
-          <button type="button" class="btn btn-secondary btn-full" style="margin-top: var(--space-sm); border: 1px dashed var(--success); color: var(--success);" onclick="skipOtpAndEnter()">⚡ ${getLang() === 'bg' ? 'Директен вход (Пропусни)' : 'Direct Enter (Skip OTP)'}</button>
+          <button type="submit" class="btn btn-primary btn-full" style="font-weight:800;">${isBg ? 'Потвърди и продължи' : 'Verify & Continue'}</button>
         </form>
 
-        <div style="display:flex; justify-content:space-between; margin-top: var(--space-md);">
-          <button class="btn btn-ghost" onclick="authScreen='login'; renderPage();">${getLang() === 'bg' ? 'Назад' : 'Back'}</button>
-          <button class="btn btn-secondary" onclick="sendOtp(authOtpPurpose, getTempUserId(), 'email'); alert('${getLang() === 'bg' ? 'Кодът беше изпратен отново.' : 'Code resent successfully.'}');">${getLang() === 'bg' ? 'Изпрати отново' : 'Resend Code'}</button>
+        <div style="display:flex; justify-content:space-between; margin-top: var(--space-md); border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="authScreen='login'; renderPage();">${isBg ? 'Отказ' : 'Cancel'}</button>
+          <button class="btn btn-ghost" style="font-size:12px; color:var(--accent);" onclick="sendOtp(authOtpPurpose, getTempUserId(), 'email'); alert('${isBg ? 'Нов код беше изпратен.' : 'A new code has been sent.'}');">${isBg ? 'Изпрати нов код' : 'Resend Code'}</button>
         </div>
       </div>
     </div>
@@ -614,20 +601,21 @@ function renderOtp() {
 }
 
 function renderResetPassword() {
+  const isBg = getLang() === 'bg';
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
-      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
-        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg);">${getLang() === 'bg' ? 'Нова парола' : 'New Password'}</h3>
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
+      <div class="card card-glow" style="width: 90%; max-width: 400px; padding: var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <h3 style="margin-bottom: var(--space-md); text-align: center; font-size: var(--fs-lg); font-weight:800; color:#fff;">${isBg ? 'Задайте нова парола' : 'Set New Password'}</h3>
         <form id="auth-form" onsubmit="handleResetPasswordForm(event)">
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Парола' : 'Password'}</label>
-            <input type="password" id="auth-password" placeholder="••••••••" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Нова парола' : 'New Password'}</label>
+            <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="new-password">
           </div>
           <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label">${getLang() === 'bg' ? 'Повтори паролата' : 'Confirm Password'}</label>
-            <input type="password" id="auth-password-confirm" placeholder="••••••••" required>
+            <label class="form-label text-xs">${isBg ? 'Повтори новата парола' : 'Confirm New Password'}</label>
+            <input type="password" id="auth-password-confirm" placeholder="••••••••" required autocomplete="new-password">
           </div>
-          <button type="submit" class="btn btn-primary btn-full">${getLang() === 'bg' ? 'Запази паролата' : 'Save Password'}</button>
+          <button type="submit" class="btn btn-primary btn-full" style="font-weight:800;">${isBg ? 'Запази паролата' : 'Save Password'}</button>
         </form>
       </div>
     </div>
@@ -635,113 +623,50 @@ function renderResetPassword() {
 }
 
 function renderOnboarding() {
+  const isBg = getLang() === 'bg';
   const user = getCurrentUser() || {};
   return `
-    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg) 100%);">
-      <div class="card card-glow" style="width: 90%; max-width: 460px; padding: var(--space-xl); background: rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl);">
-        <h2 style="margin-bottom: var(--space-sm); text-align: center; font-size: var(--fs-2xl);">${getLang() === 'bg' ? 'Добре дошли!' : 'Welcome aboard!'}</h2>
-        <p class="text-sm text-muted" style="margin-bottom: var(--space-lg); text-align: center;">${getLang() === 'bg' ? 'Завършете профила си и потвърдете контактите си за по-добро изживяване.' : 'Complete your profile and verify your contact details for a better experience.'}</p>
-
-        <div style="display:flex; gap:var(--space-sm); margin-bottom: var(--space-lg);">
-          <span class="tag ${user.emailVerified ? 'tag-success' : 'tag-warning'}">${user.emailVerified ? (getLang() === 'bg' ? 'Имейл потвърден' : 'Email Verified') : (getLang() === 'bg' ? 'Потвърдете имейл' : 'Verify Email')}</span>
-          <span class="tag ${user.phoneVerified ? 'tag-success' : 'tag-warning'}">${user.phoneVerified ? (getLang() === 'bg' ? 'Телефон потвърден' : 'Phone Verified') : (getLang() === 'bg' ? 'Потвърдете телефон' : 'Verify Phone')}</span>
-        </div>
-
-        <div style="display:flex; gap:var(--space-sm); margin-bottom: var(--space-lg);">
-          <button class="btn btn-secondary btn-full" type="button" onclick="handleVerifyContact('email')">${user.emailVerified ? (getLang() === 'bg' ? 'Изпрати OTP отново' : 'Resend Email OTP') : (getLang() === 'bg' ? 'Потвърди имейл' : 'Verify Email')}</button>
-          <button class="btn btn-secondary btn-full" type="button" onclick="handleVerifyContact('phone')">${user.phoneVerified ? (getLang() === 'bg' ? 'Изпрати OTP отново' : 'Resend SMS OTP') : (getLang() === 'bg' ? 'Потвърди телефон' : 'Verify Phone')}</button>
-        </div>
+    <div class="page" style="padding: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle at top, var(--bg-glass) 0%, var(--bg-primary) 100%);">
+      <div class="card card-glow" style="width: 90%; max-width: 420px; padding: var(--space-xl); background: rgba(17, 24, 39, 0.95); border-radius: var(--radius-xl); border: 1px solid var(--border-medium);">
+        <div style="font-size: 2.8rem; text-align: center; margin-bottom: 4px;">🎯</div>
+        <h2 style="margin-bottom: var(--space-xs); text-align: center; font-size: var(--fs-xl); font-weight:900; color:#fff;">${isBg ? 'Добре дошли във FitLife!' : 'Welcome to FitLife!'}</h2>
+        <p class="text-xs text-muted" style="margin-bottom: var(--space-lg); text-align: center;">${isBg ? 'Настройте вашите фитнес цели, за да персонализираме плана ви.' : 'Set up your fitness profile to customize your training plan.'}</p>
 
         <form id="auth-form" onsubmit="handleOnboardingForm(event)">
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Пълно име' : 'Full Name'}</label>
-            <input type="text" id="profile-fullname" value="${user.fullName || ''}" placeholder="Alex Nikolov" required>
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Вашето име' : 'Your Name'}</label>
+            <input type="text" id="profile-fullname" value="${user.fullName || ''}" placeholder="Name" required>
           </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Цел' : 'Goal'}</label>
-            <input type="text" id="profile-goal" value="${user.profile?.goal || ''}" placeholder="${getLang() === 'bg' ? 'Например: По-силен и тонизиран' : 'e.g. Stronger & more toned'}">
+          <div class="form-group" style="margin-bottom: var(--space-sm);">
+            <label class="form-label text-xs">${isBg ? 'Основна фитнес цел' : 'Primary Goal'}</label>
+            <select id="profile-goal" style="font-size:12px;">
+              <option value="Muscle Gain & Strength">${isBg ? 'Покачване на мускулна маса & сила' : 'Muscle Gain & Strength'}</option>
+              <option value="Fat Loss & Toning">${isBg ? 'Изгаряне на мазнини & релеф' : 'Fat Loss & Toning'}</option>
+              <option value="Endurance & Running">${isBg ? 'Издръжливост & бягане' : 'Endurance & Running'}</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Пол' : 'Gender'}</label>
-            <input type="text" id="profile-gender" value="${user.profile?.gender || ''}" placeholder="${getLang() === 'bg' ? 'Мъж / Жена' : 'Male / Female / Other'}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Тегло (kg)' : 'Weight (kg)'}</label>
-            <input type="text" id="profile-weight" value="${user.profile?.weight || ''}" placeholder="75">
-          </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Височина (cm)' : 'Height (cm)'}</label>
-            <input type="text" id="profile-height" value="${user.profile?.height || ''}" placeholder="180">
-          </div>
-          <div class="form-group">
-            <label class="form-label">${getLang() === 'bg' ? 'Рожден ден' : 'Birthday'}</label>
-            <input type="date" id="profile-birthday" value="${user.profile?.birthday || ''}">
+          <div class="grid-2" style="gap:10px; margin-bottom: var(--space-sm);">
+            <div class="form-group">
+              <label class="form-label text-xs">${isBg ? 'Тегло (kg)' : 'Weight (kg)'}</label>
+              <input type="number" id="profile-weight" value="75" min="40" max="200" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label text-xs">${isBg ? 'Ръст (cm)' : 'Height (cm)'}</label>
+              <input type="number" id="profile-height" value="178" min="120" max="230" required>
+            </div>
           </div>
           <div class="form-group" style="margin-bottom: var(--space-lg);">
-            <label class="form-label">${getLang() === 'bg' ? 'Кратко описание' : 'Short Bio'}</label>
-            <textarea id="profile-bio" placeholder="${getLang() === 'bg' ? 'Разкажи ни за целите си...' : 'Tell us your fitness goals...'}">${user.profile?.bio || ''}</textarea>
+            <label class="form-label text-xs">${isBg ? 'Пол' : 'Gender'}</label>
+            <select id="profile-gender" style="font-size:12px;">
+              <option value="Male">${isBg ? 'Мъж' : 'Male'}</option>
+              <option value="Female">${isBg ? 'Жена' : 'Female'}</option>
+              <option value="Other">${isBg ? 'Друг' : 'Other'}</option>
+            </select>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full">${getLang() === 'bg' ? 'Запази и продължи' : 'Save and continue'}</button>
+          <button type="submit" class="btn btn-primary btn-full" style="font-weight:800;">${isBg ? 'Завърши и започни 🚀' : 'Complete & Start 🚀'}</button>
         </form>
       </div>
     </div>
   `;
-}
-
-function showPremiumModal() {
-  const modal = document.createElement('div');
-  modal.id = 'premium-modal';
-  modal.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,26,0.95);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(10px);animation:fadeIn 0.3s ease-out;';
-  modal.innerHTML = `
-    <div class="card card-glow" style="width:90%;max-width:380px;background:var(--bg-glass);border-radius:var(--radius-lg);padding:var(--space-xl);text-align:center;position:relative;animation:slideUp 0.3s ease-out;border:1px solid rgba(255,255,255,0.1)">
-      <button onclick="closePremiumModal()" style="position:absolute;top:15px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;outline:none;">&times;</button>
-      <div style="font-size:3.5rem;margin-bottom:var(--space-sm);filter:drop-shadow(0 0 15px var(--accent-glow));">👑</div>
-      <h2 class="text-gradient" style="font-size:1.8rem;font-weight:900;letter-spacing:-1px;margin:0;">FitLife PRO</h2>
-      <p class="text-xs text-muted" style="margin-top:4px;margin-bottom:var(--space-lg);">${getLang()==='bg'?'Отключи своя пълноценен потенциал':'Unlock Your Ultimate Fitness Potential'}</p>
-      <div style="text-align:left;margin-bottom:var(--space-xl);display:flex;flex-direction:column;gap:var(--space-sm);font-size:var(--fs-sm);border-bottom:1px solid var(--border-subtle);padding-bottom:var(--space-md);">
-        <div>✨ <strong>${getLang()==='bg'?'Хранителен Режим (Диета)':'Regime & Custom Meal Plans'}</strong></div>
-        <div>🤖 <strong>${getLang()==='bg'?'Интелигентен AI Фитнес Коуч':'Personal AI Training Programs'}</strong></div>
-        <div>📸 <strong>${getLang()==='bg'?'Неограничен Анализ на Храната':'Unlimited Food Photo Scan'}</strong></div>
-        <div>💸 <strong>${getLang()==='bg'?'VIP Предизвикателства с Награди':'VIP Challenges & Escrow Pools'}</strong></div>
-      </div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-lg);">
-        <div onclick="selectPremiumPlan('monthly')" id="plan-monthly" style="flex:1;background:var(--bg-glass);border:2px solid var(--accent);border-radius:var(--radius-md);padding:var(--space-md);cursor:pointer;transition:0.3s;">
-          <div style="font-weight:700;font-size:var(--fs-md)">${getLang()==='bg'?'Месечен':'Monthly'}</div>
-          <div style="font-size:1.2rem;font-weight:900;margin-top:4px;color:var(--accent)">9.90 BGN</div>
-          <div class="text-xs text-muted">/ ${getLang()==='bg'?'месец':'month'}</div>
-        </div>
-        <div onclick="selectPremiumPlan('yearly')" id="plan-yearly" style="flex:1;background:var(--bg-glass);border:2px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md);cursor:pointer;transition:0.3s;">
-          <div style="font-weight:700;font-size:var(--fs-md)">${getLang()==='bg'?'Годишен':'Yearly'}</div>
-          <div style="font-size:1.2rem;font-weight:900;margin-top:4px;color:var(--success)">79.90 BGN</div>
-          <div class="text-xs text-muted">/ ${getLang()==='bg'?'година':'year'}</div>
-        </div>
-      </div>
-      <button onclick="subscribeToPremium()" class="btn btn-primary btn-full" style="box-shadow:0 0 20px var(--accent-glow)">${getLang()==='bg'?'Абонирай се сега':'Subscribe Now'}</button>
-      <div class="text-xs text-muted" style="margin-top:10px;">${getLang()==='bg'?'Отказване по всяко време.':'Cancel subscription anytime.'}</div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-}
-
-function closePremiumModal() {
-  const m = document.getElementById('premium-modal');
-  if (m) m.remove();
-}
-
-function selectPremiumPlan(plan) {
-  activePremiumPlan = plan;
-  const pMonthly = document.getElementById('plan-monthly');
-  const pYearly = document.getElementById('plan-yearly');
-  if (pMonthly && pYearly) {
-    pMonthly.style.borderColor = plan === 'monthly' ? 'var(--accent)' : 'var(--border-subtle)';
-    pYearly.style.borderColor = plan === 'yearly' ? 'var(--success)' : 'var(--border-subtle)';
-  }
-}
-
-function subscribeToPremium() {
-  localStorage.setItem('fitlife-premium', 'true');
-  alert(getLang()==='bg' ? '🎉 Честито! Успешно се абонирахте за FitLife PRO!' : '🎉 Congratulations! You successfully subscribed to FitLife PRO!');
-  closePremiumModal();
-  renderPage();
 }
