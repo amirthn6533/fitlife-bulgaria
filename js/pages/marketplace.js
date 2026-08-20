@@ -1,5 +1,5 @@
 // ========================================
-// FitLife Bulgaria — Marketplace Page
+// FitLife Bulgaria — Certified Coaches & Programs Marketplace
 // ========================================
 
 let marketplaceFilter = 'all';
@@ -16,6 +16,8 @@ function handleMarketSearch(value) {
 }
 
 function renderMarketplace() {
+  const isBg = getLang() === 'bg';
+
   const categories = [
     { key: 'market_all', icon: '🔥' },
     { key: 'market_trainer', icon: '🏋️' },
@@ -23,24 +25,70 @@ function renderMarketplace() {
     { key: 'market_yoga', icon: '🧘' },
     { key: 'market_strength', icon: '💪' },
     { key: 'market_running', icon: '🏃' },
-    { key: 'market_climbing', icon: '🧗' },
   ];
 
-  const coaches = [
-    { name: 'Георги Димитров', emoji: '🏆', specialty: getLang()==='bg'?'Персонален треньор':'Personal Trainer', tags: [t('market_strength'), t('market_trainer')], rating: 4.9, reviews: 127, clients: 48, price: '60 BGN', featured: true, verified: true },
-    { name: 'Светлана Петкова', emoji: '🥗', specialty: getLang()==='bg'?'Сертифициран диетолог':'Certified Nutritionist', tags: [t('market_nutritionist')], rating: 4.8, reviews: 89, clients: 35, price: '50 BGN', featured: false, verified: true },
-    { name: 'Мартин Тодоров', emoji: '🏃', specialty: getLang()==='bg'?'Маратонец & Треньор':'Marathoner & Coach', tags: [t('market_running')], rating: 4.7, reviews: 64, clients: 22, price: '45 BGN', featured: false, verified: true },
-    { name: 'Ана Стоянова', emoji: '🧘', specialty: getLang()==='bg'?'Йога инструктор':'Yoga Instructor', tags: [t('market_yoga')], rating: 4.9, reviews: 156, clients: 63, price: '40 BGN', featured: true, verified: false },
-    { name: 'Петър Иванов', emoji: '🧗', specialty: getLang()==='bg'?'Треньор по катерене':'Climbing Coach', tags: [t('market_climbing')], rating: 4.6, reviews: 31, clients: 15, price: '55 BGN', featured: false, verified: true },
+  const certifiedCoaches = [
+    { 
+      name: isBg ? 'FitLife AI Главен Треньор' : 'FitLife AI Master Trainer', 
+      emoji: '🤖', 
+      specialty: isBg ? 'Персонализирани силови и хипертрофия планове' : 'Custom Strength & Hypertrophy Coach', 
+      tags: [t('market_strength'), t('market_trainer')], 
+      rating: 5.0, 
+      reviews: 240, 
+      clients: '24/7 AI', 
+      price: isBg ? 'Включен в PRO' : 'Included in PRO', 
+      featured: true, 
+      verified: true,
+      action: 'ai_coach'
+    },
+    { 
+      name: isBg ? 'FitLife AI Диетолог & Нутриционист' : 'FitLife AI Nutrition Specialist', 
+      emoji: '🥗', 
+      specialty: isBg ? 'Калкулатор на макронутриенти и персонализирани менюта' : 'Macro Calculation & Meal Planning', 
+      tags: [t('market_nutritionist')], 
+      rating: 4.9, 
+      reviews: 180, 
+      clients: '24/7 AI', 
+      price: isBg ? 'Включен в PRO' : 'Included in PRO', 
+      featured: true, 
+      verified: true,
+      action: 'ai_nutrition'
+    },
+    { 
+      name: isBg ? 'FitLife AI Бягане & Кардио Ментор' : 'FitLife AI Running & Pace Coach', 
+      emoji: '🏃', 
+      specialty: isBg ? 'Подготовка за 5K, 10K и Полумаратон' : '5K, 10K & Marathon Progression Coach', 
+      tags: [t('market_running')], 
+      rating: 4.9, 
+      reviews: 115, 
+      clients: '24/7 AI', 
+      price: isBg ? 'Включен в PRO' : 'Included in PRO', 
+      featured: false, 
+      verified: true,
+      action: 'ai_running'
+    },
+    { 
+      name: isBg ? 'FitLife AI Мобилност & Йога' : 'FitLife AI Yoga & Mobility Coach', 
+      emoji: '🧘', 
+      specialty: isBg ? 'Гъвкавост, възстановяване на стави и разтягане' : 'Flexibility, Joint Health & Recovery', 
+      tags: [t('market_yoga')], 
+      rating: 4.8, 
+      reviews: 95, 
+      clients: '24/7 AI', 
+      price: isBg ? 'Включен в PRO' : 'Included in PRO', 
+      featured: false, 
+      verified: true,
+      action: 'ai_yoga'
+    }
   ];
 
-  const plans = [
-    { title: getLang()==='bg'?'12-Седмичен Мускулен план':'12-Week Muscle Builder', coach: 'Георги Д.', rating: 4.9, price: '35 BGN', icon: '💪' },
-    { title: getLang()==='bg'?'Кето хранителен план':'Keto Meal Plan', coach: 'Светлана П.', rating: 4.8, price: '25 BGN', icon: '🥑' },
-    { title: getLang()==='bg'?'Маратон за начинаещи':'Beginner Marathon Plan', coach: 'Мартин Т.', rating: 4.7, price: '30 BGN', icon: '🏃' },
+  const officialPlans = [
+    { title: isBg ? '12-Седмичен Мускулен план (Hypertrophy)' : '12-Week Hypertrophy Master Plan', coach: 'FitLife Training Lab', rating: 5.0, price: isBg ? 'Безплатно с PRO' : 'Free with PRO', icon: '💪' },
+    { title: isBg ? 'Високопротеинов Хранителен Режим' : 'High-Protein Bulgarian Nutrition Guide', coach: 'FitLife Nutrition Lab', rating: 4.9, price: isBg ? 'Безплатно с PRO' : 'Free with PRO', icon: '🥑' },
+    { title: isBg ? 'От 0 до 5К Програма за Бягане' : 'Couch to 5K Sofia Running Plan', coach: 'FitLife Endurance Lab', rating: 4.9, price: isBg ? 'Безплатно с PRO' : 'Free with PRO', icon: '🏃' },
   ];
 
-  let filteredCoaches = coaches;
+  let filteredCoaches = certifiedCoaches;
   if (marketplaceFilter !== 'all') {
     const expectedTag = t('market_' + marketplaceFilter);
     filteredCoaches = filteredCoaches.filter(c => c.tags.includes(expectedTag));
@@ -79,78 +127,61 @@ function renderMarketplace() {
         <button class="btn btn-sm btn-primary" style="margin-top:var(--space-md);position:relative;z-index:1" onclick="event.stopPropagation(); openAICoachModal('chat');">✨ ${t('market_try_ai')}</button>
       </div>
 
-      <!-- Featured Coaches -->
+      <!-- Featured AI Coaches -->
       <div class="section">
         <div class="section-header">
-          <h3 class="section-title">${t('market_featured')}</h3>
+          <h3 class="section-title">${isBg ? 'Сертифицирани FitLife Треньори' : 'Verified FitLife Coaches'}</h3>
         </div>
-        ${filteredCoaches.filter(c => c.featured).map((c, i) => `
-          <div class="coach-card coach-card-featured" style="margin-bottom:var(--space-md);animation: slideUp 0.4s ease-out both; animation-delay: ${i * 0.1}s">
+        ${filteredCoaches.map((c, i) => `
+          <div class="coach-card coach-card-featured" onclick="openAICoachModal('chat')" style="margin-bottom:var(--space-md);cursor:pointer;animation: slideUp 0.4s ease-out both; animation-delay: ${i * 0.1}s">
             <div class="coach-avatar-wrap">
-               <div class="avatar avatar-lg">${c.emoji}</div>
+               <div class="avatar avatar-lg" style="background:var(--gradient-primary);">${c.emoji}</div>
                ${c.verified ? '<div class="coach-verified">✓</div>' : ''}
             </div>
             <div class="coach-info">
-              <div class="coach-name">${c.name}</div>
-              <div class="coach-specialty">${c.specialty}</div>
+              <div class="coach-name" style="font-weight:900;">${c.name}</div>
+              <div class="coach-specialty" style="color:var(--accent);">${c.specialty}</div>
               <div class="coach-tags">${c.tags.map(tag => `<span class="tag tag-primary">${tag}</span>`).join('')}</div>
               <div class="coach-stats">
                 <span class="coach-rating">⭐ ${c.rating}</span>
                 <span>${c.reviews} ${t('market_reviews')}</span>
-                <span>${c.clients} ${t('market_clients')}</span>
-                <span class="coach-price">${c.price}${t('market_per_session')}</span>
+                <span class="coach-price" style="margin-left:auto;color:var(--success);font-weight:800;">${c.price}</span>
               </div>
             </div>
           </div>
         `).join('')}
       </div>
 
-      <!-- All Coaches -->
-      <div class="section">
-        <div class="section-header">
-          <h3 class="section-title">${t('market_all_coaches')}</h3>
-        </div>
-        ${filteredCoaches.filter(c => !c.featured).map((c, i) => `
-          <div class="coach-card" style="margin-bottom:var(--space-sm);animation: slideUp 0.3s ease-out both; animation-delay: ${(i + 2) * 0.08}s">
-            <div class="coach-avatar-wrap">
-              <div class="avatar">${c.emoji}</div>
-              ${c.verified ? '<div class="coach-verified">✓</div>' : ''}
-            </div>
-            <div class="coach-info">
-              <div class="coach-name">${c.name}</div>
-              <div class="coach-specialty">${c.specialty}</div>
-              <div class="coach-stats">
-                <span class="coach-rating">⭐ ${c.rating}</span>
-                <span>${c.clients} ${t('market_clients')}</span>
-                <span class="coach-price">${c.price}</span>
-              </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-
-      <!-- Plans Store -->
+      <!-- Official Training Programs -->
       <div class="section">
         <div class="section-header">
           <h3 class="section-title">${t('market_plans')}</h3>
-          <button class="section-link">${t('common_see_all')}</button>
         </div>
-        <div class="scroll-h">
-          ${plans.map(p => `
-            <div class="plan-card" style="width:200px">
-              <div class="plan-card-image">${p.icon}</div>
-              <div class="plan-card-body">
-                <div class="plan-card-title">${p.title}</div>
-                <div class="plan-card-coach">${p.coach}</div>
-                <div class="plan-card-footer">
-                  <span class="plan-card-price">${p.price}</span>
-                  <span class="plan-card-rating">⭐ ${p.rating}</span>
-                </div>
+        <div class="grid-2">
+          ${officialPlans.map((p, i) => `
+            <div class="plan-card" onclick="openAICoachModal('chat')" style="cursor:pointer;animation: slideUp 0.4s ease-out both; animation-delay: ${i * 0.1}s">
+              <div class="plan-icon">${p.icon}</div>
+              <div class="plan-title">${p.title}</div>
+              <div class="plan-coach">${p.coach}</div>
+              <div class="plan-footer">
+                <span class="plan-price" style="color:var(--success);">${p.price}</span>
+                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openAICoachModal('chat')">${t('market_buy')}</button>
               </div>
             </div>
           `).join('')}
         </div>
       </div>
+
+      <!-- Sofia Coach Application CTA -->
+      <div class="card card-glow" style="margin-top:var(--space-xl);background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.2);border-radius:var(--radius-lg);padding:var(--space-lg);text-align:center;">
+        <div style="font-size:2.2rem;margin-bottom:6px;">🏋️‍♂️</div>
+        <h4 style="font-size:var(--fs-md);font-weight:900;color:#fff;margin-bottom:4px;">${isBg ? 'Вие сте сертифициран треньор в София?' : 'Are you a certified trainer in Sofia?'}</h4>
+        <p class="text-xs text-muted" style="margin-bottom:var(--space-md);">${isBg ? 'Присъединете се към партньорската мрежа на FitLife и достигайте до нови клиенти.' : 'Join the official FitLife Coach Network and connect with active athletes.'}</p>
+        <button class="btn btn-secondary btn-sm" onclick="alert('${isBg ? 'Благодарим за интереса! Изпратете сертификата си на coaches@fitlife.bg.' : 'Thank you for your interest! Send your certification to coaches@fitlife.bg.'}')" style="border-radius:var(--radius-full);">
+          📩 ${isBg ? 'Кандидатствай като треньор' : 'Apply as Coach'}
+        </button>
+      </div>
+
     </div>
   `;
 }
