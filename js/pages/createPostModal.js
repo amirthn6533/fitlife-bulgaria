@@ -161,13 +161,14 @@ async function handlePublishPost(e) {
   e.preventDefault();
   const content = document.getElementById('post-content-input').value.trim();
   const location = document.getElementById('post-location-input').value;
-  const user = getCurrentUser() || { fullName: 'Alex Nikolov' };
+  const user = getCurrentUser() || {};
   const isBg = getLang() === 'bg';
+  const currentName = user.fullName || (isBg ? 'Спортист' : 'Athlete');
 
   const newPost = {
-    id: `post_${Date.now()}`,
-    user: user.fullName || 'Alex Nikolov',
-    avatar: 'A',
+    id: `user_post_${Date.now()}`,
+    user: currentName,
+    avatar: currentName[0].toUpperCase(),
     verified: user.is_premium || false,
     time: 'just now',
     location: location,

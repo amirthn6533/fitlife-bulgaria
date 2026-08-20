@@ -299,10 +299,11 @@ const RunTrackerService = {
 
   shareRunToFeed(summary) {
     const isBg = getLang() === 'bg';
-    const user = getCurrentUser() || { fullName: 'Alex Nikolov' };
+    const user = getCurrentUser() || {};
+    const currentName = user.fullName || (isBg ? 'Спортист' : 'Athlete');
     const runPost = {
-      id: `post_${Date.now()}`,
-      user: user.fullName || 'Alex Nikolov',
+      id: `user_post_${Date.now()}`,
+      user: currentName,
       avatar: '🏃',
       verified: user.is_premium || false,
       time: 'just now',

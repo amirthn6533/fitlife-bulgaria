@@ -61,10 +61,10 @@ function renderScannerInitialView() {
         </button>
       </div>
 
-      <!-- Sample Plates for Quick Demo -->
+      <!-- Popular Fitness Meal Presets -->
       <div style="text-align:left;">
         <div class="text-xs text-muted" style="margin-bottom:var(--space-xs);font-weight:600;">
-          💡 ${isBg ? 'Или избери примерно фитнес ястие за тест:' : 'Or pick a sample fitness plate to test:'}
+          🥗 ${isBg ? 'Или избери от популярните фитнес менюта:' : 'Or choose from popular fitness meals:'}
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-xs);">
           ${FoodScannerService.dishesKB.map((dish, i) => `

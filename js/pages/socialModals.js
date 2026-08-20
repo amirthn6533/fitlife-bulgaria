@@ -73,20 +73,19 @@ function handleAddCommentSubmit(e, postIndex) {
   if (!input || !input.value.trim()) return;
 
   const text = input.value.trim();
-  const user = getCurrentUser() || { fullName: 'Alex Nikolov' };
+  const user = getCurrentUser() || {};
+  const isBg = getLang() === 'bg';
+  const currentName = user.fullName || (isBg ? 'Спортист' : 'Athlete');
   const posts = getSocialFeedPosts();
   const post = posts[postIndex];
 
   if (post) {
     if (!post.commentsList) {
-      post.commentsList = [
-        { user: 'Мария Иванова', avatar: '🧘', text: 'Браво! Страхотен прогрес! 🔥💪', time: '1h' },
-        { user: 'FitCoach Георги', avatar: '🏆', text: 'Перфектна форма на клека!', time: '30m' }
-      ];
+      post.commentsList = [];
     }
     post.commentsList.push({
-      user: user.fullName || 'Alex Nikolov',
-      avatar: 'A',
+      user: currentName,
+      avatar: currentName[0].toUpperCase(),
       text: text,
       time: 'just now'
     });

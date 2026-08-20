@@ -16,7 +16,7 @@ function renderHome() {
   const workoutDays = [0, 1, 3, 4]; // Mon, Tue, Thu, Fri
 
   const user = getCurrentUser();
-  const username = user?.fullName || localStorage.getItem('fitlife-username') || 'Alex';
+  const username = user?.fullName || (getLang() === 'bg' ? 'Спортист' : 'Athlete');
   return `
     <div class="page">
       <div class="page-header">

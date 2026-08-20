@@ -33,7 +33,7 @@ function renderProfile() {
           <button class="profile-edit-btn" onclick="authScreen='onboarding'; renderPage();">✏️</button>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-          <div class="profile-name">${user.fullName || 'Alex Nikolov'}</div>
+          <div class="profile-name">${user.fullName || (getLang() === 'bg' ? 'Спортист' : 'Athlete')}</div>
           ${localStorage.getItem('fitlife-premium') === 'true' ? '<span class="tag" style="background:linear-gradient(135deg,#FFD700,#FF7675);color:#000;font-weight:900;font-size:10px;border:none;box-shadow:0 0 10px rgba(255,215,0,0.5);">👑 VIP PRO</span>' : ''}
         </div>
         <div style="margin: var(--space-sm) 0; display:flex; gap: var(--space-sm); flex-wrap: wrap;">
@@ -43,15 +43,15 @@ function renderProfile() {
         <div class="profile-bio">${user.profile?.bio || (getLang()==='bg' ? '💪 Фитнес ентусиаст | 🏃 Бегач | София' : '💪 Fitness enthusiast | 🏃 Runner | Sofia')}</div>
         <div class="profile-follow-stats">
           <div class="profile-follow-stat">
-            <div class="profile-follow-num">248</div>
+            <div class="profile-follow-num">12</div>
             <div class="profile-follow-label">${t('profile_followers')}</div>
           </div>
           <div class="profile-follow-stat">
-            <div class="profile-follow-num">186</div>
+            <div class="profile-follow-num">8</div>
             <div class="profile-follow-label">${t('profile_following')}</div>
           </div>
           <div class="profile-follow-stat">
-            <div class="profile-follow-num">34</div>
+            <div class="profile-follow-num">${(typeof dbLoad === 'function' ? dbLoad('user_created_posts', []) : []).length}</div>
             <div class="profile-follow-label">${t('profile_posts')}</div>
           </div>
         </div>

@@ -3,13 +3,15 @@
 // ========================================
 
 function renderLeaderboard() {
+  const user = getCurrentUser() || {};
+  const currentName = user.fullName || (getLang() === 'bg' ? 'Ти' : 'You');
   const leaders = [
     { rank: '🥇', name: 'Иван Петров', stat: '24 workouts', value: '24', avatar: '💪' },
     { rank: '🥈', name: 'Мария Иванова', stat: '22 workouts', value: '22', avatar: '🧘' },
     { rank: '🥉', name: 'Георги Тодоров', stat: '20 workouts', value: '20', avatar: '🏆' },
     { rank: '4', name: 'Елена Стоянова', stat: '18 workouts', value: '18', avatar: '🏃' },
     { rank: '5', name: 'Петър Димитров', stat: '16 workouts', value: '16', avatar: '🔥' },
-    { rank: '6', name: 'Alex Nikolov', stat: '14 workouts', value: '14', avatar: 'A', isYou: true },
+    { rank: '6', name: currentName, stat: '14 workouts', value: '14', avatar: currentName[0].toUpperCase(), isYou: true },
     { rank: '7', name: 'Димитър Колев', stat: '13 workouts', value: '13', avatar: '🏋️' },
   ];
 
@@ -123,8 +125,8 @@ function renderNotifications() {
               <div class="text-xs text-muted">${isBg ? 'Автоматични известия за тренировка и вода' : 'Personalized workout & hydration alerts'}</div>
             </div>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="testPushNotification()">
-            ⚡ ${isBg ? 'Тест' : 'Test Alert'}
+          <button class="btn btn-sm btn-primary" onclick="testPushNotification()" style="font-size:11px; padding:4px 10px;">
+            🔔 ${isBg ? 'Проба' : 'Preview'}
           </button>
         </div>
 
