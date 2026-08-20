@@ -2,6 +2,19 @@
 // FitLife Bulgaria — Marketplace Page
 // ========================================
 
+let marketplaceFilter = 'all';
+let marketplaceSearch = '';
+
+function setMarketFilter(filter) {
+  marketplaceFilter = filter;
+  renderPage();
+}
+
+function handleMarketSearch(value) {
+  marketplaceSearch = value.toLowerCase();
+  renderPage();
+}
+
 function renderMarketplace() {
   const categories = [
     { key: 'market_all', icon: '🔥' },
@@ -27,6 +40,18 @@ function renderMarketplace() {
     { title: getLang()==='bg'?'Маратон за начинаещи':'Beginner Marathon Plan', coach: 'Мартин Т.', rating: 4.7, price: '30 BGN', icon: '🏃' },
   ];
 
+  let filteredCoaches = coaches;
+  if (marketplaceFilter !== 'all') {
+    const expectedTag = t('market_' + marketplaceFilter);
+    filteredCoaches = filteredCoaches.filter(c => c.tags.includes(expectedTag));
+  }
+  if (marketplaceSearch) {
+    filteredCoaches = filteredCoaches.filter(c => 
+      c.name.toLowerCase().includes(marketplaceSearch) || 
+      c.specialty.toLowerCase().includes(marketplaceSearch)
+    );
+  }
+
   return `
     <div class="page">
       <div class="page-header">
@@ -35,22 +60,23 @@ function renderMarketplace() {
 
       <!-- Search -->
       <div style="margin-bottom: var(--space-md)">
-        <input type="text" placeholder="${t('market_search')}" style="padding-left:36px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22%2364748B%22 viewBox=%220 0 24 24%22><circle cx=%2211%22 cy=%2211%22 r=%228%22 stroke=%22%2364748B%22 stroke-width=%222%22 fill=%22none%22/><line x1=%2216.65%22 y1=%2216.65%22 x2=%2221%22 y2=%2221%22 stroke=%22%2364748B%22 stroke-width=%222%22/></svg>');background-repeat:no-repeat;background-position:10px center">
+        <input type="text" placeholder="${t('market_search')}" oninput="handleMarketSearch(this.value)" value="${marketplaceSearch}" style="padding-left:36px;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22%2364748B%22 viewBox=%220 0 24 24%22><circle cx=%2211%22 cy=%2211%22 r=%228%22 stroke=%22%2364748B%22 stroke-width=%222%22 fill=%22none%22/><line x1=%2216.65%22 y1=%2216.65%22 x2=%2221%22 y2=%2221%22 stroke=%22%2364748B%22 stroke-width=%222%22/></svg>');background-repeat:no-repeat;background-position:10px center">
       </div>
 
       <!-- Category Pills -->
       <div class="category-pills" style="margin-bottom: var(--space-lg)">
-        ${categories.map((c, i) => `
-          <button class="category-pill ${i === 0 ? 'active' : ''}">${c.icon} ${t(c.key)}</button>
-        `).join('')}
+        ${categories.map(c => {
+          let f = c.key.replace('market_', '');
+          return `<button class="category-pill ${marketplaceFilter === f ? 'active' : ''}" onclick="setMarketFilter('${f}')">${c.icon} ${t(c.key)}</button>`;
+        }).join('')}
       </div>
 
       <!-- AI Coach Card -->
-      <div class="ai-coach-card" style="margin-bottom: var(--space-xl)">
+      <div class="ai-coach-card" style="margin-bottom: var(--space-xl); cursor: pointer;" onclick="openAICoachModal('chat')">
         <div class="ai-coach-icon">🤖</div>
         <div class="ai-coach-title">${t('market_ai_coach')}</div>
         <div class="ai-coach-subtitle">${t('market_ai_desc')}</div>
-        <button class="btn btn-sm btn-primary" style="margin-top:var(--space-md);position:relative;z-index:1">✨ ${t('market_try_ai')}</button>
+        <button class="btn btn-sm btn-primary" style="margin-top:var(--space-md);position:relative;z-index:1" onclick="event.stopPropagation(); openAICoachModal('chat');">✨ ${t('market_try_ai')}</button>
       </div>
 
       <!-- Featured Coaches -->
@@ -58,11 +84,11 @@ function renderMarketplace() {
         <div class="section-header">
           <h3 class="section-title">${t('market_featured')}</h3>
         </div>
-        ${coaches.filter(c => c.featured).map((c, i) => `
+        ${filteredCoaches.filter(c => c.featured).map((c, i) => `
           <div class="coach-card coach-card-featured" style="margin-bottom:var(--space-md);animation: slideUp 0.4s ease-out both; animation-delay: ${i * 0.1}s">
             <div class="coach-avatar-wrap">
-              <div class="avatar avatar-lg">${c.emoji}</div>
-              ${c.verified ? '<div class="coach-verified">✓</div>' : ''}
+               <div class="avatar avatar-lg">${c.emoji}</div>
+               ${c.verified ? '<div class="coach-verified">✓</div>' : ''}
             </div>
             <div class="coach-info">
               <div class="coach-name">${c.name}</div>
@@ -84,7 +110,7 @@ function renderMarketplace() {
         <div class="section-header">
           <h3 class="section-title">${t('market_all_coaches')}</h3>
         </div>
-        ${coaches.filter(c => !c.featured).map((c, i) => `
+        ${filteredCoaches.filter(c => !c.featured).map((c, i) => `
           <div class="coach-card" style="margin-bottom:var(--space-sm);animation: slideUp 0.3s ease-out both; animation-delay: ${(i + 2) * 0.08}s">
             <div class="coach-avatar-wrap">
               <div class="avatar">${c.emoji}</div>

@@ -2,6 +2,13 @@
 // FitLife Bulgaria — Challenges Page
 // ========================================
 
+let challengeFilter = 'all';
+
+function setChallengeFilter(filter) {
+  challengeFilter = filter;
+  renderPage();
+}
+
 function renderChallenges() {
   const challenges = [
     { emoji: '🏃', title: getLang()==='bg'?'Бягай 5км най-бързо':'Fastest 5K Run', desc: getLang()==='bg'?'Кой ще пробяга 5 км най-бързо тази седмица?':'Who can run 5km the fastest this week?', participants: 18, daysLeft: 5, wagered: true, stake: '20 BGN', pool: '360 BGN', type: 'running' },
@@ -10,6 +17,15 @@ function renderChallenges() {
     { emoji: '💪', title: getLang()==='bg'?'100 лицеви опори на ден':'100 Pushups Daily', desc: getLang()==='bg'?'100 лицеви опори всеки ден цял месец':'100 pushups every single day for a month', participants: 41, daysLeft: 18, wagered: false, type: 'strength' },
     { emoji: '🏃', title: getLang()==='bg'?'Маратон за месец':'Marathon in a Month', desc: getLang()==='bg'?'Пробягай 42км общо за един месец':'Run a total of 42km in one month', participants: 27, daysLeft: 25, wagered: true, stake: '10 USDT', pool: '270 USDT', type: 'running' },
   ];
+
+  let filteredChallenges = challenges;
+  if (challengeFilter === 'wagered') {
+    filteredChallenges = challenges.filter(c => c.wagered);
+  } else if (challengeFilter === 'free') {
+    filteredChallenges = challenges.filter(c => !c.wagered);
+  } else if (challengeFilter === 'completed') {
+    filteredChallenges = challenges.filter(c => c.status === 'completed');
+  }
 
   return `
     <div class="page">
@@ -20,10 +36,10 @@ function renderChallenges() {
 
       <!-- Tabs -->
       <div class="tabs" style="margin-bottom: var(--space-lg)">
-        <button class="tab active">${t('challenges_active')}</button>
-        <button class="tab">💰 ${t('challenges_wagered')}</button>
-        <button class="tab">${t('challenges_free')}</button>
-        <button class="tab">${t('challenges_completed')}</button>
+        <button class="tab ${challengeFilter === 'all' ? 'active' : ''}" onclick="setChallengeFilter('all')">${t('challenges_active')}</button>
+        <button class="tab ${challengeFilter === 'wagered' ? 'active' : ''}" onclick="setChallengeFilter('wagered')">💰 ${t('challenges_wagered')}</button>
+        <button class="tab ${challengeFilter === 'free' ? 'active' : ''}" onclick="setChallengeFilter('free')">${t('challenges_free')}</button>
+        <button class="tab ${challengeFilter === 'completed' ? 'active' : ''}" onclick="setChallengeFilter('completed')">${t('challenges_completed')}</button>
       </div>
 
       <!-- Leaderboard & Wallet links -->
@@ -39,7 +55,7 @@ function renderChallenges() {
       </div>
 
       <!-- Challenges List -->
-      ${challenges.map((c, i) => `
+      ${filteredChallenges.length > 0 ? filteredChallenges.map((c, i) => `
         <div class="challenge-card ${c.wagered ? 'wagered' : ''}" style="animation-delay: ${i * 0.08}s">
           <div class="challenge-header">
             <span class="challenge-emoji">${c.emoji}</span>
@@ -77,7 +93,7 @@ function renderChallenges() {
             </button>
           </div>
         </div>
-      `).join('')}
+      `).join('') : '<div style="text-align:center;padding:2rem;color:var(--text-secondary)">No challenges found</div>'}
     </div>
   `;
 }

@@ -209,6 +209,7 @@ const translations = {
     common_done: 'Done',
     common_loading: 'Loading...',
     common_search: 'Search...',
+    common_database: 'Database (Supabase)',
   },
 
   bg: {
@@ -417,6 +418,7 @@ const translations = {
     common_done: 'Готово',
     common_loading: 'Зареждане...',
     common_search: 'Търсене...',
+    common_database: 'База данни (Supabase)',
   }
 };
 

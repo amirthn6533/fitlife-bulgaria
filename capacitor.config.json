@@ -1,0 +1,33 @@
+{
+  "appId": "bg.fitlife.app",
+  "appName": "FitLife Bulgaria",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "backgroundColor": "#0A0E1A",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true,
+    "backgroundColor": "#0A0E1A"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0A0E1A",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0A0E1A"
+    },
+    "Camera": {
+      "presentationStyle": "fullscreen"
+    }
+  }
+}

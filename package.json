@@ -1,0 +1,31 @@
+{
+  "name": "fitlife-bulgaria",
+  "version": "1.0.0",
+  "description": "FitLife Bulgaria — AI Fitness, Nutrition & Social PWA / iOS App",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "cap:sync": "cap sync ios",
+    "cap:open": "cap open ios",
+    "build:ios": "cap copy ios && cap open ios"
+  },
+  "keywords": [
+    "fitness",
+    "healthkit",
+    "pwa",
+    "ios",
+    "ai-coach",
+    "supabase"
+  ],
+  "author": "FitLife Bulgaria",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@capacitor/camera": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@supabase/supabase-js": "^2.40.0"
+  }
+}

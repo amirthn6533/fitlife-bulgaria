@@ -35,9 +35,42 @@ body {
 
 /* iPhone notch support */
 body {
-  padding-top: var(--safe-top);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+}
+
+.status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: var(--z-navbar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(6px + var(--safe-top)) var(--space-base) 8px;
+  background: rgba(10, 14, 26, 0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.status-bar .status-left,
+.status-bar .status-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#app {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  padding-top: calc(44px + var(--safe-top));
+  padding-bottom: calc(var(--navbar-height) + var(--safe-bottom) + 8px);
 }
 
 a {
@@ -112,16 +145,6 @@ h5 { font-size: var(--fs-md); }
 .text-muted { color: var(--text-secondary); }
 .text-center { text-align: center; }
 
-/* ── App Container ── */
-#app {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100dvh;
-  position: relative;
-  padding-bottom: calc(var(--navbar-height) + var(--safe-bottom) + 8px);
-}
-
 /* ── Page Container ── */
 .page {
   padding: var(--space-base);
@@ -134,12 +157,14 @@ h5 { font-size: var(--fs-md); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md) 0 var(--space-lg);
+  padding: var(--space-sm) var(--space-base) var(--space-lg);
   position: sticky;
-  top: 0;
+  top: calc(44px + var(--safe-top));
   z-index: var(--z-dropdown);
-  background: var(--bg-primary);
-  background-image: var(--gradient-bg);
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .page-header h1 {

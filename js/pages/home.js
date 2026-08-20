@@ -15,13 +15,15 @@ function renderHome() {
   }
   const workoutDays = [0, 1, 3, 4]; // Mon, Tue, Thu, Fri
 
+  const user = getCurrentUser();
+  const username = user?.fullName || localStorage.getItem('fitlife-username') || 'Alex';
   return `
     <div class="page">
       <div class="page-header">
         <div>
           <div class="home-greeting">
             <h2>${t('home_greeting')} 👋</h2>
-            <h1 class="text-gradient">Alex</h1>
+            <h1 class="text-gradient">${username}</h1>
           </div>
         </div>
         <div class="lang-switch">

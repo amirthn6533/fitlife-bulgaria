@@ -3,10 +3,15 @@
 // ========================================
 
 let currentPage = 'home';
-let isLoggedIn = localStorage.getItem('fitlife-logged-in') === 'true';
+
+// Initialize Dark/Light Theme on startup
+if (localStorage.getItem('fitlife-darkmode') === 'false') {
+  document.body.classList.add('light-mode');
+}
 
 // ── Navigation ──
 function navigate(page) {
+  if (typeof HapticService !== 'undefined') HapticService.selection();
   currentPage = page;
   renderPage();
   updateNav();
@@ -23,12 +28,32 @@ function renderPage() {
   const app = document.getElementById('page-content');
   const bottomNav = document.getElementById('bottom-nav');
 
-  if (!isLoggedIn) {
+  const session = getSession();
+  const verificationScreens = ['otp', 'reset'];
+
+  if (!session) {
     if (bottomNav) bottomNav.style.display = 'none';
-    app.innerHTML = renderLogin();
-    bindLoginEvents();
+    app.innerHTML = renderAuth();
+    bindAuthEvents();
     return;
   }
+
+  if (verificationScreens.includes(authScreen)) {
+    if (bottomNav) bottomNav.style.display = 'none';
+    app.innerHTML = renderAuth();
+    bindAuthEvents();
+    return;
+  }
+
+  if (!hasCompleteProfile(session.user)) {
+    authScreen = 'onboarding';
+    if (bottomNav) bottomNav.style.display = 'none';
+    app.innerHTML = renderOnboarding();
+    bindAuthEvents();
+    return;
+  }
+
+  authScreen = 'app';
 
   if (bottomNav) bottomNav.style.display = 'flex';
   switch(currentPage) {
@@ -45,13 +70,14 @@ function renderPage() {
     case 'wallet': app.innerHTML = renderWallet(); break;
     case 'discover': app.innerHTML = renderDiscover(); break;
     case 'profile': app.innerHTML = renderProfile(); break;
+    case 'analytics': app.innerHTML = renderAnalytics(); break;
     default: app.innerHTML = renderHome();
   }
   bindPageEvents();
   if (currentPage === 'discover') {
     setTimeout(initDiscoverMap, 100);
   }
-  if (currentPage === 'running' && runningActiveTab === 'live') {
+  if (currentPage === 'running' && typeof runningActiveTab !== 'undefined' && runningActiveTab === 'live' && typeof initLiveRunMap === 'function') {
     setTimeout(initLiveRunMap, 100);
   }
 }
@@ -62,6 +88,7 @@ function bindPageEvents() {
     el.addEventListener('click', () => {
       el.classList.toggle('done');
       el.textContent = el.classList.contains('done') ? '✓' : '';
+      if (typeof HapticService !== 'undefined') HapticService.success();
     });
   });
   // Select options
@@ -70,6 +97,7 @@ function bindPageEvents() {
       opt.addEventListener('click', () => {
         group.querySelectorAll('.select-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
+        if (typeof HapticService !== 'undefined') HapticService.selection();
       });
     });
   });
@@ -79,18 +107,14 @@ function bindPageEvents() {
       tab.addEventListener('click', () => {
         tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+        if (typeof HapticService !== 'undefined') HapticService.selection();
       });
     });
   });
-  // Post like
-  document.querySelectorAll('.post-action-like').forEach(el => {
+  // Post action like
+  document.querySelectorAll('.post-action-btn, .post-action-like').forEach(el => {
     el.addEventListener('click', () => {
-      el.classList.toggle('liked');
-      const count = el.querySelector('.like-count');
-      if (count) {
-        let n = parseInt(count.textContent);
-        count.textContent = el.classList.contains('liked') ? n + 1 : n - 1;
-      }
+      if (typeof HapticService !== 'undefined') HapticService.heart();
     });
   });
   // Category pills
@@ -99,6 +123,7 @@ function bindPageEvents() {
       pill.addEventListener('click', () => {
         group.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
         pill.classList.add('active');
+        if (typeof HapticService !== 'undefined') HapticService.selection();
       });
     });
   });
